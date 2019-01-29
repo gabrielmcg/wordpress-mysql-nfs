@@ -20,8 +20,8 @@
   gather_facts: false
 
   vars_files:
-    - ../group_vars/vars
-    - ../group_vars/vault
+    #- ../group_vars/vars
+    #- ../group_vars/vault
 
   environment: "{{ env }}"
 
@@ -45,6 +45,28 @@
         src: ../templates/wordpress-mysql/wordpress-pvc.yml.j2
         dest: /tmp/wordpress-pvc.yml
 
+    - name: Copy mysql-deployment template
+      template:
+        src: ../templates/wordpress-mysql/mysql-deployment.yml.j2
+        dest: /tmp/mysql-deployment.yml
+
+    - name: Copy wordpress-deployment template
+      template:
+        src: ../templates/wordpress-mysql/wordpress-deployment.yml.j2
+        dest: /tmp/wordpress-deployment.yml
+
+
+    - name: Copy mysql-service template
+      template:
+        src: ../templates/wordpress-mysql/mysql-service.yml.j2
+        dest: /tmp/mysql-service.yml
+
+    - name: Copy wordpress-service template
+      template:
+        src: ../templates/wordpress-mysql/wordpress-service.yml.j2
+        dest: /tmp/wordpress-service.yml
+
+
 
 
     - include_tasks: includes/find_ucp.yml
@@ -58,12 +80,18 @@
     # Assume that ucp_instance hasn't changed in the meantime
     # - include_tasks: includes/config_client.yml
 
-    - name: Apply yml files to install nfs provisioner
+    - name: Apply yml files to install  wordpress and mysql
       shell: |
         . env.sh
-        #kubectl apply -f /tmp/wordpress-mysql-namespace.yml
-        #kubectl -n wordpress-mysql apply -f /tmp/mysql-pvc.yml
+        kubectl apply -f /tmp/wordpress-mysql-namespace.yml
+        kubectl -n wordpress-mysql create secret generic mysql-pass --from-literal=password=password
+        kubectl -n wordpress-mysql apply -f /tmp/mysql-pvc.yml
         kubectl -n wordpress-mysql apply -f /tmp/wordpress-pvc.yml
+        kubectl -n wordpress-mysql apply -f /tmp/mysql-deployment.yml
+        kubectl -n wordpress-mysql apply -f /tmp/wordpress-deployment.yml
+        kubectl -n wordpress-mysql apply -f /tmp/mysql-service.yml
+        kubectl -n wordpress-mysql apply -f /tmp/wordpress-service.yml
+        kubectl -n wordpress-mysql get svc
       args:
         chdir: ~/certs.{{ ucp_instance }}.{{ ucp_username }}
         executable: /usr/bin/bash
